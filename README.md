@@ -21,3 +21,7 @@ You know that feeling when a data incident happens, you write a detailed postmor
 
 ```bash
 pip install -e .
+```
+## Business Analysis
+
+You can check my Business Analysis over this project on my personal webpage [View Analysis](https://ricard-alcaraz.com/blog/2026-09-04-bridging-the-gap-turning-incident-knowledge-into-automated-tests/)
