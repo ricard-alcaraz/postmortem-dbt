@@ -1,0 +1,24 @@
+[
+  {
+    "id": "01_fanout",
+    "incident_file": "examples/incident_01_fanout.md",
+    "expected_test_type": "singular",
+    "expected_target_table": "daily_revenue",
+    "description": "Many-to-one join causing fanout"
+  },
+  {
+    "id": "03_null_concat",
+    "incident_file": "examples/incident_03_null_concat.md",
+    "expected_test_type": "generic",
+    "expected_target_table": "marts.dim_customers",
+    "expected_target_column": "full_name",
+    "description": "NULL concatenation"
+  },
+  {
+    "id": "04_business_logic",
+    "incident_file": "examples/incident_04_business_logic.md",
+    "expected_test_type": "singular",
+    "expected_target_table": "marts.dim_orders",
+    "description": "Conditional business rule"
+  }
+]
