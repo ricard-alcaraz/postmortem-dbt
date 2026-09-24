@@ -2,23 +2,53 @@
   {
     "id": "01_fanout",
     "incident_file": "examples/incident_01_fanout.md",
-    "expected_test_type": "singular",
-    "expected_target_table": "daily_revenue",
-    "description": "Many-to-one join causing fanout"
+    "testable": true,
+    "description": "Many-to-one join causing fanout",
+    "acceptable": [
+      {"test_type": "singular", "target_model": "daily_revenue"},
+      {"test_type": "generic", "target_model": "int_orders_with_refunds", "target_column": "order_id", "test": "unique"}
+    ],
+    "reference_test": "eval/reference_tests/01_fanout.sql",
+    "scenario": {"buggy": "fail", "fixed": "pass"}
+  },
+  {
+    "id": "02_case_drift",
+    "incident_file": "examples/incident_02_case_drift.md",
+    "testable": true,
+    "description": "Unexpected status casing from upstream",
+    "acceptable": [
+      {
+        "test_type": "generic",
+        "target_model": "dim_orders",
+        "target_column": "status",
+        "test": "accepted_values",
+        "args": {"values": ["pending", "shipped", "delivered", "cancelled", "returned"]}
+      }
+    ],
+    "reference_test": "eval/reference_tests/02_case_drift.sql",
+    "scenario": {"buggy": "fail", "fixed": "pass"}
   },
   {
     "id": "03_null_concat",
     "incident_file": "examples/incident_03_null_concat.md",
-    "expected_test_type": "generic",
-    "expected_target_table": "marts.dim_customers",
-    "expected_target_column": "full_name",
-    "description": "NULL concatenation"
+    "testable": true,
+    "description": "NULL concatenation",
+    "acceptable": [
+      {"test_type": "generic", "target_model": "dim_customers", "target_column": "full_name", "test": "not_null"}
+    ],
+    "reference_test": "eval/reference_tests/03_null_concat.sql",
+    "scenario": {"buggy": "fail", "fixed": "pass"},
+    "notes": "The postmortem also suggests a not_null on stg_customers.first_name. That test still fails after the fix (the upstream data really has NULLs), so do not count it in the pass-on-fixed metric. Treat it as an optional warn-level extra."
   },
   {
     "id": "04_business_logic",
     "incident_file": "examples/incident_04_business_logic.md",
-    "expected_test_type": "singular",
-    "expected_target_table": "marts.dim_orders",
-    "description": "Conditional business rule"
+    "testable": true,
+    "description": "Conditional business rule",
+    "acceptable": [
+      {"test_type": "singular", "target_model": "dim_orders"}
+    ],
+    "reference_test": "eval/reference_tests/04_business_logic.sql",
+    "scenario": {"buggy": "fail", "fixed": "pass"}
   }
 ]

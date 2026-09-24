@@ -1,5 +1,4 @@
 # src/postmortem_dbt/cli.py
-
 import typer
 from pathlib import Path
 from rich.console import Console
@@ -7,8 +6,9 @@ from rich.panel import Panel
 
 from .core.llm import generate_dbt_test
 from .dbt.writer import write_test
+from .dbt.manifest import DbtManifest
 
-app = typer.Typer(help="Generate dbt tests from plain-English incident postmortems.")
+app = typer.Typer(help="Generate dbt tests from plain-English incident postmortems.", add_completion=False)
 console = Console()
 
 @app.command()
@@ -16,15 +16,18 @@ def generate(
     incident: Path = typer.Option(..., "--incident", "-i", help="Path to the incident postmortem markdown file."),
     project: Path = typer.Option(..., "--project", "-p", help="Path to the root of your dbt project."),
     models: str = typer.Option(None, "--models", "-m", help="Comma-separated list of specific dbt models to provide as context (optional)."),
-    dry_run: bool = typer.Option(False, "--dry-run", "-d", help="Preview changes without writing to files."),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompt and write directly to disk."),
 ):
-    """
-    Analyze an incident and generate a dbt test.
-    """
+    """Analyze an incident and generate a dbt test."""
     console.print(Panel.fit(f"🔍 Analyzing Incident: [bold cyan]{incident.name}[/bold cyan]", border_style="blue"))
 
     if not incident.exists():
         console.print(f"[red]❌ Error:[/red] Incident file not found at {incident}")
+        raise typer.Exit(code=1)
+
+    manifest_path = project / "target" / "manifest.json"
+    if not manifest_path.exists():
+        console.print(f"[red]❌ Error:[/red] dbt manifest not found at {manifest_path}. Run `dbt compile` first.")
         raise typer.Exit(code=1)
 
     incident_text = incident.read_text(encoding="utf-8")
@@ -48,15 +51,26 @@ def generate(
         console.print(f"[cyan]{proposal.test_code}[/cyan]")
         console.print("[bold]---------------------------------[/bold]\n")
 
-        if project:
-            action = "[DRY RUN] Would write to" if dry_run else "Writing to"
-            console.print(f"[bold yellow]⚙️  {action} dbt project at: {project}[/bold yellow]")
-            write_test(proposal, project_path=project, dry_run=dry_run)
-        else:
-            console.print("[yellow]⚠️  No --project path provided. Skipping file write.[/yellow]")
+        manifest = DbtManifest(manifest_path)
+        
+        if not yes:
+            confirm = typer.confirm("Write this test to your dbt project?", default=False)
+            if not confirm:
+                console.print("[yellow]⚠️  Aborted. No files were modified.[/yellow]")
+                raise typer.Exit(code=0)
 
+        console.print(f"[bold yellow]⚙️  Writing to dbt project at: {project}[/bold yellow]")
+        write_test(proposal, project_path=project, manifest=manifest, dry_run=False)
+        console.print("[green]🎉 Done! Run `dbt test` to verify.[/green]")
+
+    except FileExistsError as e:
+        console.print(f"[red]❌ File Error:[/red] {e}")
+        raise typer.Exit(code=1)
+    except ValueError as e:
+        console.print(f"[red]❌ Validation Error:[/red] {e}")
+        raise typer.Exit(code=1)
     except Exception as e:
-        console.print(f"[red]❌ An error occurred:[/red] {e}")
+        console.print(f"[red]❌ An unexpected error occurred:[/red] {e}")
         raise typer.Exit(code=1)
 
 if __name__ == "__main__":
