@@ -15,7 +15,7 @@ def validate_proposal(proposal: DbtTestProposal, manifest: DbtManifest) -> List[
         return errors
 
     # NEW: Enforce target_column for known column-level tests
-    col_level_tests = ['not_null', 'unique', 'accepted_values', 'relationships']
+    col_level_tests = ['not_null', 'unique', 'accepted_values', 'relationships', 'dbt_utils.expression_is_true']
     is_col_test = any(t in proposal.test_code.lower() or t in proposal.test_name.lower() for t in col_level_tests)
     
     if is_col_test and not proposal.target_column:
